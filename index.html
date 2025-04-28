@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正计时与倒计时</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background-color: #f0f4f8;
+            color: #333;
+            padding: 50px;
+        }
+        h1 {
+            font-size: 3em;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        #timer, #countdown {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        #energy {
+            font-size: 2em;
+            margin-top: 20px;
+            color: #555;
+        }
+        #progress-bar {
+            width: 50%;
+            background-color: #ddd;
+            height: 30px;
+            margin-top: 20px;
+            border-radius: 5px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        #progress {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        button {
+            font-size: 1.2em;
+            padding: 12px 30px;
+            cursor: pointer;
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+        input {
+            font-size: 1.2em;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 80px;
+            margin: 10px;
+        }
+        .input-container {
+            margin-top: 20px;
+        }
+        h3 {
+            font-size: 1.5em;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>正计时与倒计时</h1>
+    
+    <div id="timer">正计时: 00:00:00</div>
+    <div id="countdown">倒计时: 00:00:00</div>
+
+    <div id="energy">能量值: 0</div>
+    <div id="progress-bar">
+        <div id="progress"></div>
+    </div>
+    
+    <button id="startBtn">开始计时</button>
+    <button id="stopBtn" disabled>停止</button>
+    <button id="resetBtn" disabled>重置</button>
+
+    <div class="input-container">
+        <h3>设置倒计时</h3>
+        <input type="number" id="countdownHours" placeholder="小时" min="0">
+        <input type="number" id="countdownMinutes" placeholder="分钟" min="0" max="59">
+        <input type="number" id="countdownSeconds" placeholder="秒" min="0" max="59">
+    </div>
+
+    <script>
+        let timer;
+        let countdownTimer;
+        
+        let seconds = 0;
+        let minutes = 0;
+        let hours = 0;
+        
+        let countdownSeconds = 0;  
+        let countdownMinutes = 0;  
+        let countdownHours = 0;    
+
+        let energy = 0;
+        let maxEnergy = 0;  // 最大能量值
+        let isRunning = false;
+
+        const timerElement = document.getElementById('timer');
+        const countdownElement = document.getElementById('countdown');
+        const energyElement = document.getElementById('energy');
+        const progressElement = document.getElementById('progress');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        const countdownHoursInput = document.getElementById('countdownHours');
+        const countdownMinutesInput = document.getElementById('countdownMinutes');
+        const countdownSecondsInput = document.getElementById('countdownSeconds');
+
+        function updateTimerDisplay() {
+            const formattedHours = String(hours).padStart(2, '0');
+            const formattedMinutes = String(minutes).padStart(2, '0');
+            const formattedSeconds = String(seconds).padStart(2, '0');
+            timerElement.textContent = `正计时: ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+
+            const formattedCountdownHours = String(countdownHours).padStart(2, '0');
+            const formattedCountdownMinutes = String(countdownMinutes).padStart(2, '0');
+            const formattedCountdownSeconds = String(countdownSeconds).padStart(2, '0');
+            countdownElement.textContent = `倒计时: ${formattedCountdownHours}:${formattedCountdownMinutes}:${formattedCountdownSeconds}`;
+
+            energyElement.textContent = `能量值: ${energy}`;
+
+            // 更新进度条
+            const progressPercentage = Math.min((energy / maxEnergy) * 100, 100);  // 根据最大能量值更新进度条
+            progressElement.style.width = `${progressPercentage}%`;
+        }
+
+        function startTimers() {
+            // 获取用户设置的倒计时时间
+            countdownHours = parseInt(countdownHoursInput.value) || 0;
+            countdownMinutes = parseInt(countdownMinutesInput.value) || 0;
+            countdownSeconds = parseInt(countdownSecondsInput.value) || 0;
+
+            // 计算总的倒计时时间（秒）
+            maxEnergy = countdownHours * 3600 + countdownMinutes * 60 + countdownSeconds;
+
+            if (!isRunning) {
+                isRunning = true;
+                startBtn.textContent = "正在计时"; // 更新按钮文本
+                timer = setInterval(() => {
+                    // 正计时部分
+                    seconds++;
+                    energy++;  // 每秒增加1能量值
+                    if (seconds === 60) {
+                        seconds = 0;
+                        minutes++;
+                    }
+                    if (minutes === 60) {
+                        minutes = 0;
+                        hours++;
+                    }
+
+                    // 倒计时部分
+                    if (countdownSeconds > 0) {
+                        countdownSeconds--;
+                    } else if (countdownMinutes > 0) {
+                        countdownSeconds = 59;
+                        countdownMinutes--;
+                    } else if (countdownHours > 0) {
+                        countdownSeconds = 59;
+                        countdownMinutes = 59;
+                        countdownHours--;
+                    }
+
+                    updateTimerDisplay();
+                }, 1000);
+
+                stopBtn.disabled = false;
+                resetBtn.disabled = false;
+            }
+        }
+
+        function stopTimers() {
+            clearInterval(timer);
+            isRunning = false;
+            startBtn.textContent = "开始计时"; // 更新按钮文本
+        }
+
+        function resetTimers() {
+            clearInterval(timer);
+            isRunning = false;
+            seconds = 0;
+            minutes = 0;
+            hours = 0;
+            energy = 0;  // 重置能量值
+            maxEnergy = 0; // 重置最大能量值
+
+            countdownSeconds = 0;  // 重置倒计时秒数
+            countdownMinutes = 0;  // 重置倒计时分钟
+            countdownHours = 0;    // 重置倒计时小时
+
+            // 清空倒计时输入框
+            countdownHoursInput.value = '';
+            countdownMinutesInput.value = '';
+            countdownSecondsInput.value = '';
+
+            updateTimerDisplay();
+            startBtn.textContent = "开始计时"; // 更新按钮文本
+            stopBtn.disabled = true;
+            resetBtn.disabled = true;
+        }
+
+        startBtn.addEventListener('click', startTimers);
+        stopBtn.addEventListener('click', stopTimers);
+        resetBtn.addEventListener('click', resetTimers);
+    </script>
+
+</body>
+</html>
